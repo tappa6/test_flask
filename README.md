@@ -11,3 +11,36 @@ To run this application:
 ```
 flask --debug run
 ```
+
+# Install
+
+Create a virtualenv and activate it:
+
+```
+python3 -m venv .venv
+. .venv/bin/activate
+```
+
+Or on Windows cmd:
+
+```
+py -3 -m venv .venv
+.venv\Scripts\activate.bat
+```
+
+Install SJSUBot:
+```
+pip install -e .
+```
+
+# Run
+
+Initialize Database (Only once and to cleanup after SQL schema change):
+```
+flask --app flaskr init-db
+```
+
+Start webserver (With debug flag, changes to source file is dynamically loaded)
+```
+flask --app flaskr run --port 8001 --debug
+```
