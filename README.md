@@ -37,10 +37,10 @@ pip install -e .
 
 Initialize Database (Only once and to cleanup after SQL schema change):
 ```
-flask --app flaskr init-db
+flask --app sjsubot init-db
 ```
 
 Start webserver (With debug flag, changes to source file is dynamically loaded)
 ```
-flask --app flaskr run --port 8001 --debug
+flask --app sjsubot run --port 8001 --debug
 ```
