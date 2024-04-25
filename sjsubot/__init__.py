@@ -1,9 +1,15 @@
 import os
 
 from flask import Flask
-
+from dotenv import load_dotenv
 
 def create_app(test_config=None):
+    status = load_dotenv()
+    # Exit if there is no env
+    if not status:
+        print("Failed to load .env, giving up")
+        exit()
+
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(

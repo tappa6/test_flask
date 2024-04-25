@@ -9,6 +9,7 @@ from werkzeug.exceptions import abort
 
 from .auth import login_required
 from .db import get_db
+import openai
 
 bp = Blueprint("blog", __name__)
 
@@ -83,40 +84,64 @@ def create():
     return render_template("blog/create.html")
 
 
-@bp.route("/<int:id>/update", methods=("GET", "POST"))
+@bp.route("/<int:id>/update", methods=("POST", "GET"))
 @login_required
 def update(id):
     """Update a post if the current user is the author."""
     post = get_post(id)
+    author_id = g.user["id"]
 
-    if request.method == "GET":
+
+    # DB
+    db = get_db()
+
+    # Insert new message into table
+    if request.method == "POST":
+        body = request.form["body"]
+
+        print("writing row", "id=%s" % (id), "author_id=%d" % (author_id), "body=%s" % (body))
+        db.execute(
+            "INSERT INTO conversation (topic_id, body, author_id) VALUES (?, ?, ?)", (id, body, author_id)
+        )
+
+        # Load history
         db = get_db()
         res = db.execute(
             "SELECT author_id, body FROM conversation WHERE topic_id = ?", (id, )
         )
         rows = res.fetchall()
-        history = ''
-        for row in rows:
-            print("reading row", row['author_id'], row['body'])
-            history = history + "\n" + row['body']
 
-        post = dict(post)
-        post['body'] = history
-
-    if request.method == "POST":
-        #title = request.form["title"]
-        body = request.form["body"]
-        error = None
-
-        db = get_db()
+        # Now get response
+        response = get_response_from_ai(rows)
+        system_id = 0
+        print("writing row", "id=%s" % (id), "author_id=%d" % (system_id), "body=%s" % (response))
         db.execute(
-            "INSERT INTO conversation (topic_id, body, author_id) VALUES (?, ?, ?)", (id, body, g.user["id"])
+            "INSERT INTO conversation (topic_id, body, author_id) VALUES (?, ?, ?)", (id, response, system_id)
         )
+
         db.commit()
-        return redirect(url_for("blog.index"))
 
+    # For GET and POST (after insert)
+    # Load again
+    res = db.execute(
+        "SELECT author_id, body FROM conversation WHERE topic_id = ?", (id, )
+    )
+    rows = res.fetchall()
+
+    history = ''
+    for row in rows:
+        #print("reading row", "id=%s" % (id), row['author_id'], row['body'])
+        history = history + "\n" + row['body']
+
+    post = dict(post)
+    post['body'] = history
+    #print("History=[%s]" % history)
+
+    # form pretty output
+    post['body'] = decorate_history(rows)
+
+    # Show conversation
     return render_template("blog/update.html", post=post)
-
 
 @bp.route("/<int:id>/delete", methods=("POST",))
 @login_required
@@ -131,3 +156,47 @@ def delete(id):
     db.execute("DELETE FROM post WHERE id = ?", (id,))
     db.commit()
     return redirect(url_for("blog.index"))
+
+def get_response_from_ai(rows):
+    # Init client
+    if "openai_client" not in g:
+        g.openai_client = openai.OpenAI()
+
+    # Exit if there is no client
+    if "openai_client" not in g or g.openai_client is None:
+        return "Failed to create OpenAI client"
+
+    # Get client from global context
+    openai_client = g.openai_client
+
+    messages = []
+    message = {
+        "role": "system",
+        "content": "You are a helpful assistant."
+    }
+    messages.append(message)
+    for row in rows:
+        message = {
+            "role": "user" if row['author_id'] != 0 else "assistant",
+            "content": row['body']
+        }
+        messages.append(message)
+
+    # Get response from backend AI engine
+    print("sending chat completions request", messages)
+    response = openai_client.chat.completions.create(
+        model="gpt-3.5-turbo-1106",
+        messages=messages
+    )
+    print("received response of chat completions request", response)
+    return response.choices[0].message.content
+
+
+# decorate conversation history with html tags
+def decorate_history(rows):
+    response = ""
+    for row in rows:
+        entry = "%s: %s\n\n" % ("user" if row['author_id'] != 0 else "assistant", row['body'])
+        response = response + entry
+
+    return response

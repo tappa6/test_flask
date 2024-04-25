@@ -3,6 +3,7 @@
 
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS post;
+DROP TABLE IF EXISTS conversation;
 
 CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,3 +30,7 @@ CREATE TABLE conversation (
   FOREIGN KEY (topic_id) REFERENCES post (id),
   FOREIGN KEY (author_id) REFERENCES user (id)
 );
+
+
+-- Default users
+INSERT INTO user (username, password) VALUES ("system", "TODO");
