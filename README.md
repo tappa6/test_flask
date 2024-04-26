@@ -40,6 +40,8 @@ Initialize Database (Only once and to cleanup after SQL schema change):
 flask --app sjsubot init-db
 ```
 
+
+***NOTE: DO NOT CHECK THIS ENV FILE INTO THE REPO***<br>
 Create sjsubot/.env for OpenAI API Key with following content:
 ```
 OPENAI_API_KEY=<OPENAI_API_KEY>
