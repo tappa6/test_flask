@@ -1,4 +1,4 @@
-from slotmachine import SlotMachine
+from slotsim.slotmachine import SlotMachine
 
 # Sample simulations
 slot1 = SlotMachine(3, {"777": 300, "888": 300, "999": 300})
