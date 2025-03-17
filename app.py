@@ -7,19 +7,19 @@ app = Flask(__name__)
 
 @app.route('/htop')
 def htop():
-    # Fetch system username
+    
     username = os.getenv('USER') or os.getenv('USERNAME') or "Unknown User"
     
-    # Get IST Time
+ 
     ist_time = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
     
-    # Fetch 'top' command output (limited to 10 lines for clarity)
+    
     try:
         top_output = subprocess.check_output("top -b -n 1 | head -10", shell=True, universal_newlines=True)
     except Exception as e:
         top_output = f"Error fetching top output: {str(e)}"
     
-    # HTML Response
+  
     return f"""
     <html>
     <body>
